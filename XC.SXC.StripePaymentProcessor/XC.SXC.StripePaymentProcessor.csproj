@@ -44,6 +44,21 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Sitecore.Commerce.Connect.Collection.Model, Version=11.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sitecore.Commerce.Connect.Core.11.4.15\lib\net462\Sitecore.Commerce.Connect.Collection.Model.dll</HintPath>
+    </Reference>
+    <Reference Include="Sitecore.Commerce.Connect.Core, Version=11.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sitecore.Commerce.Connect.Core.11.4.15\lib\net462\Sitecore.Commerce.Connect.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Sitecore.Commerce.Connect.Remote, Version=11.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Sitecore.Commerce.Connect.Core.11.4.15\lib\net462\Sitecore.Commerce.Connect.Remote.dll</HintPath>
+    </Reference>
+    <Reference Include="Sitecore.Commerce.Engine.Connect">
+      <HintPath>Lib\Sitecore.Commerce.Engine.Connect.dll</HintPath>
+    </Reference>
     <Reference Include="Sitecore.Commerce.XA.Feature.Cart, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Sitecore.Commerce.XA.Feature.Cart.1.4.150\lib\net462\Sitecore.Commerce.XA.Feature.Cart.dll</HintPath>
     </Reference>
@@ -68,6 +83,15 @@
     <Reference Include="Sitecore.XA.Foundation.SitecoreExtensions, Version=3.8.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Sitecore.XA.Foundation.SitecoreExtensions.3.8.0\lib\NET462\Sitecore.XA.Foundation.SitecoreExtensions.dll</HintPath>
     </Reference>
+    <Reference Include="Stripe.net, Version=25.12.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Stripe.net.25.12.0\lib\net45\Stripe.net.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Collections.Immutable, Version=1.2.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Collections.Immutable.1.5.0\lib\netstandard2.0\System.Collections.Immutable.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Data.Linq" />
+    <Reference Include="System.Net.Http, Version=4.2.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL" />
+    <Reference Include="System.Net.Http.WebRequest" />
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
     <Reference Include="System.Web.ApplicationServices" />
@@ -112,17 +136,23 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Views\XCCheckout\XcBilling.cshtml" />
     <Content Include="App_Config\Include\Feature\Commerce\XC.Sitecore.Commerce.XA.Feature.config" />
+    <Content Include="App_Config\Include\Foundation\Commerce\XC.Sitecore.Commerce.XA.Foundation.config" />
+    <Content Include="App_Config\Include\XC.StripeSettings.config" />
     <None Include="Properties\PublishProfiles\SXP 902 Local - SK.pubxml" />
+    <Content Include="Views\Commerce\XCCheckout\XcBilling.cshtml" />
     <None Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Constants.cs" />
     <Compile Include="Controllers\XcCheckoutController.cs" />
+    <Compile Include="Models\StripePaymentResponseModel.cs" />
+    <Compile Include="Pipelines\Initialize\RegisterControllerRoutes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\Checkout\IXcCheckoutRepository.cs" />
+    <Compile Include="Repositories\Checkout\XcCheckoutRepository.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Views\web.config" />
     <None Include="packages.config" />
     <None Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -131,9 +161,7 @@
       <DependentUpon>Web.config</DependentUpon>
     </None>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Models\" />
-  </ItemGroup>
+  <ItemGroup />
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>

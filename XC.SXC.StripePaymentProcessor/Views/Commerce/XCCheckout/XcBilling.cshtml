@@ -17,7 +17,33 @@
 @using Sitecore.Mvc
 @model BillingRenderingModel
 
+<!--Stripe Elements-->
+<script src="https://js.stripe.com/v3/"></script>
+<!--Stripe Elements-->
+<!--Register Elements-->
+<script src="/Scripts/Stripe/stripe.index.js"></script>
+<!--Register Elements-->
+<!--Localization-->
+<script src="/Scripts/Stripe/l10n.js"></script>
+<!--Localization-->
+<style>
+    #stripe-creditcard input {
+        height: 34px;
+        border-radius: 4px;
+        background-color: #fff;
+        color: #747a83;
+        border: solid 1px #b9bcc1;
+        background-image: none;
+        box-shadow: none !important;
+        text-align: left;
+        -webkit-transition: all 0.3s;
+        transition: all 0.3s;
+        padding: 5px 10px;
+        line-height: 1.42857143;
+    }
+</style>
 <div @Html.Sxa().Component("cxa-checkoutbilling-component", Model.Attributes)>
+
     @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
     {
         @Model.ErrorMessage
@@ -101,7 +127,7 @@
                     <div class="contact-info-form">
                         <div class="email-address">
                             <label for="BillingInput-Email">@emailAddressLabel *</label>
-                            <input type="text" class="email-input" placeholder="@emailAddressLabelPlaceholder" data-bind="value: billingEmail">
+                            <input type="text" class="email-input" id="billingInputEmail" placeholder="@emailAddressLabelPlaceholder" data-bind="value: billingEmail">
                         </div>
                         <div class="confirm-email">
                             <label>@confirmEmailAddressLabel *</label>
@@ -109,98 +135,89 @@
                         </div>
                     </div>
                 </div>
-
-
-                <a href="#" class="apply-credit-card-toggle ccpayment">
+                <a href="#" class="apply-credit-card-toggle ccpayment" data-bind="click: $root.isEmailFilled">
                     <span class="credit-card-toggle-icon"></span>@applyCreditCardLabel
                 </a>
-                <div class="credit-card-payment-section" style="display: none">
-                    <h4 class="credit-card-payment-header">@billingInformationLabel</h4>
-                    <div class="credit-card-payment-form">
-                        <div class="billing-paycard-container" style="display: none" data-bind="visible: payFederatedPayment(), with: creditCardPayment">
-                            <div class="payment-method" data-bind="visible: $parent.payFederatedPayment() && !displayExistingPaymentMessage()">
-                                <form class="external-payment-form">
-                                    <div id="dropin-container"></div>
-                                </form>
-                                <div class="payment-amount">
-                                    <div class="show-payment">
-                                        <label for="creditCardPayment_Amount">@paymentAmountLabel *</label>
-                                        <input type="text" class="form-control" name="amount" id="creditCardPayment_Amount" data-bind="value: formatCurrency(creditCardAmount, 2, '@Model.CurrencyDecimalSeparator', '@Model.CurrencySymbol', '@Model.CurrencyGroupSeparator', @Model.CurrencySymbolPosition)" disabled>
+                <div class="credit-card-payment-section stripepaymentform" style="display: none">
+                    <h4 class="credit-card-payment-header">Enter Billing and Payment Information</h4>
+                    <form class="stripepaymentform">
+                        <div id="stripe-paymentRequest">
+                            <!--Stripe PaymentRequestButton element inserted here-->
+                        </div>
+                        <legend class="card-only"></legend>
+                        <legend class="payment-request-available"></legend>
+                        <div class="credit-card-payment-form">
+                            <div class="billing-address-container" data-bind="with: billingAddress">
+                                <div class="billing-address-dropdown">
+                                    <select class="select-billing-address" data-bind="template: { name: 'select-billing-address-template', foreach: $root.userAddresses, as:'address'}, value: $parent.selectedBillingAddress,enable: $parent.creditCardEnable" title="@sameAsShipping"></select>
+                                    @if (!Sitecore.Context.PageMode.IsExperienceEditor)
+                                    {
+                                        <script type="text/html" id="select-billing-address-template">
+                                            <!-- ko if: externalId() === 'UseShipping' && $root.isShipAll -->
+                                            <option data-bind="attr:{ value:externalId }, text: fullAddress"></option>
+                                            <!-- /ko -->
+                                            <!-- ko if: externalId() !== 'UseShipping' -->
+                                            <option data-bind="attr:{ value:externalId }, text: fullAddress"></option>
+                                            <!-- /ko -->
+                                        </script>
+                                    }
+                                    else
+                                    {
+                                        <script type="text/html" id="select-billing-address-template">
+                                        </script>
+                                    }
+                                </div>
+                                <div class="billing-addresss-details">
+                                    <input type="hidden" id="billingAddress-ExternalId" data-bind="value: externalId" />
+                                    <div class="address-name">
+                                        <label for="address-name">@billingNameLabel *</label>
+                                        <input id="address-name" type="text" class="address-name-textbox" placeholder="@billingNameLabelPlaceholder" data-bind="value: name, enable: $parent.billingAddressEnable">
                                     </div>
-                                    <button class="validate-payment-btn" type="submit">@validatePaymentLabel</button>
+                                    <div class="address-street">
+                                        <label for="address-address1">@addressLabel *</label>
+                                        <input id="address-address1" type="text" class="address-street-textbox" placeholder="@addressLabelPlaceholder" data-bind="value: address1, enable: $parent.billingAddressEnable">
+                                    </div>
+
+                                    <div class="address-city-name">
+                                        <label for="address-city">@cityLabel *</label>
+                                        <input id="address-city" type="text" class="address-city-textbox" placeholder="@cityLabelPlaceholder" data-bind="value: city, enable: $parent.billingAddressEnable">
+                                    </div>
+                                    @*<div class="address-city-zipcode">
+                                            <label for="address-zipPostalCode">@zipCodeLabel *</label>
+                                            <input id="address-zipPostalCode" type="text" class="address-zip-textbox" id="billingAddress-Zipcode" placeholder="@zipCodeLabelPlaceholder" data-bind="value: zipPostalCode, enable: $parent.billingAddressEnable">
+                                        </div>*@
+                                    <div class="address-country-name">
+
+                                        <label for="address-country">@countryLabel *</label>
+                                        <select id="address-country" class="address-country-textbox" data-bind="options: $parent.countries, optionsText:'country', optionsValue:'code', value: country, enable: $parent.billingAddressEnable"></select>
+                                    </div>
+                                    <div class="address-state-name">
+                                        <label for="address-state">@stateLabel *</label>
+                                        <!-- ko if: states == 'undefined' -->
+                                        <select class="address-state-dropdown" data-bind="options: $parent.states, optionsText:'name', optionsValue:'code', value: state, enable: $parent.billingAddressEnable"></select>
+                                        <!-- /ko -->
+                                        <!-- ko if: states != 'undefined' -->
+                                        <input id="address-state" type="text" class="address-state-textbox" id="billingAddress-State" placeholder="@stateLabelPlaceholder" data-bind="value: state, enable: $parent.billingAddressEnable">
+                                        <!-- /ko -->
+                                    </div>
                                 </div>
-                                <div class="must-revalidate-payment" data-bind="visible: mustRevalidatePayment()">
-                                    <span data-bind="text: mustRevalidatePaymentMessage()" />
+                                <div>
+                                    <label>Payment Amount</label>
+                                    <input id="payment-amount" type="text" class="payment-amount" data-bind="value: $root.cart().total" disabled />
                                 </div>
+
                             </div>
-                            <div class="reset-existing-payment" data-bind="visible: $parent.payFederatedPayment() && displayExistingPaymentMessage()">
-                                <a class="existing-payment-reset-link" href="#">
-                                    <span class="existing-payment-message" data-bind="text: existingPaymentMessage()" />
-                                </a>
+                            <div style="width: 100%;">
+                                <div>
+                                    <label for="stripe-creditcard">Enter Credit Card or Debit Card details *</label>
+                                    <div style="width: 100%" class="input" id="stripe-creditcard"></div>
+                                </div>
+                                <button style="width: 100%;" class="stripePaymentButton btn btn-primary" data-bind="enable: $root.checkEmailBilling" id="submitStripePayment" type="submit">Validate Payment</button>
                             </div>
                         </div>
-                        <div class="billing-address-container" data-bind="with: billingAddress">
-                            <h4 class="billing-address-header">@billingAddressHeaderLabel</h4>
-                            <div class="billing-address-dropdown">
-
-                                <select class="select-billing-address" data-bind="template: { name: 'select-billing-address-template', foreach: $root.userAddresses, as:'address'}, value: $parent.selectedBillingAddress,enable: $parent.creditCardEnable" title="@sameAsShipping"></select>
-
-                                @if (!Sitecore.Context.PageMode.IsExperienceEditor)
-                                {
-                                    <script type="text/html" id="select-billing-address-template">
-                                        <!-- ko if: externalId() === 'UseShipping' && $root.isShipAll -->
-                                        <option data-bind="attr:{ value:externalId }, text: fullAddress"></option>
-                                        <!-- /ko -->
-                                        <!-- ko if: externalId() !== 'UseShipping' -->
-                                        <option data-bind="attr:{ value:externalId }, text: fullAddress"></option>
-                                        <!-- /ko -->
-                                    </script>
-                                }
-                                else
-                                {
-                                    <script type="text/html" id="select-billing-address-template">
-                                    </script>
-                                }
-                            </div>
-                            <div class="billing-addresss-details">
-                                <input type="hidden" id="billingAddress-ExternalId" data-bind="value: externalId" />
-                                <div class="address-name">
-                                    <label>@billingNameLabel *</label>
-                                    <input type="text" class="address-name-textbox" placeholder="@billingNameLabelPlaceholder" data-bind="value: name, enable: $parent.billingAddressEnable">
-                                </div>
-                                <div class="address-street">
-                                    <label>@addressLabel *</label>
-                                    <input type="text" class="address-street-textbox" placeholder="@addressLabelPlaceholder" data-bind="value: address1, enable: $parent.billingAddressEnable">
-                                </div>
-
-                                <div class="address-city-name">
-                                    <label>@cityLabel *</label>
-                                    <input type="text" class="address-city-textbox" placeholder="@cityLabelPlaceholder" data-bind="value: city, enable: $parent.billingAddressEnable">
-                                </div>
-                                <div class="address-city-zipcode">
-                                    <label>@zipCodeLabel *</label>
-                                    <input type="text" class="address-zip-textbox" id="billingAddress-Zipcode" placeholder="@zipCodeLabelPlaceholder" data-bind="value: zipPostalCode, enable: $parent.billingAddressEnable">
-                                </div>
-                                <div class="address-country-name">
-
-                                    <label>@countryLabel *</label>
-                                    <select class="address-country-textbox" data-bind="options: $parent.countries, optionsText:'country', optionsValue:'code', value: country, enable: $parent.billingAddressEnable"></select>
-                                </div>
-                                <div class="address-state-name">
-                                    <label>@stateLabel *</label>
-                                    <!-- ko if: states == 'undefined' -->
-                                    <select class="address-state-dropdown" data-bind="options: $parent.states, optionsText:'name', optionsValue:'code', value: state, enable: $parent.billingAddressEnable"></select>
-                                    <!-- /ko -->
-                                    <!-- ko if: states != 'undefined' -->
-                                    <input type="text" class="address-state-textbox" id="billingAddress-State" placeholder="@stateLabelPlaceholder" data-bind="value: state, enable: $parent.billingAddressEnable">
-                                    <!-- /ko -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    </form>
                 </div>
-
-                <a href="#" class="apply-gift-card-toggle giftCardPayment">
+                <a href="#" class="apply-gift-card-toggle giftCardPayment" data-bind="click: $root.isEmailFilled">
                     <span><span class="apply-gift-card-toggle-icon"></span></span>@applyGiftLabel
                 </a>
                 <div class="apply-gift-card-section" data-bind="with: giftCardPayment" id="billingPayGiftCardContainer" style="display: none">
