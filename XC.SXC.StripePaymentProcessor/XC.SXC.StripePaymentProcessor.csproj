@@ -136,11 +136,17 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App_Config\Include\Feature\Commerce\XC.Sitecore.Commerce.XA.Feature.config" />
+    <Content Include="App_Config\Include\Feature\Commerce\XC.Sitecore.Commerce.XA.Feature.config">
+      <SubType>Designer</SubType>
+    </Content>
     <Content Include="App_Config\Include\Foundation\Commerce\XC.Sitecore.Commerce.XA.Foundation.config" />
-    <Content Include="App_Config\Include\XC.StripeSettings.config" />
+    <Content Include="App_Config\Include\XC.StripeSettings.config">
+      <SubType>Designer</SubType>
+    </Content>
     <None Include="Properties\PublishProfiles\SXP 902 Local - SK.pubxml" />
     <Content Include="Views\Commerce\XCCheckout\XcBilling.cshtml" />
+    <Content Include="Views\Commerce\Checkout\Review.cshtml" />
+    <Content Include="Views\Commerce\XCCheckout\XcReview.cshtml" />
     <None Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
