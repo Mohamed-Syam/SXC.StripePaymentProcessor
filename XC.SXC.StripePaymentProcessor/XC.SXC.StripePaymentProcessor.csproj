@@ -146,6 +146,7 @@
     <None Include="Properties\PublishProfiles\SXP 902 Local - SK.pubxml" />
     <Content Include="Views\Commerce\XCCheckout\XcBilling.cshtml" />
     <Content Include="Views\Commerce\Checkout\Review.cshtml" />
+    <Content Include="Views\Commerce\XCCheckout\XcReview.cshtml" />
     <None Include="Web.config" />
   </ItemGroup>
   <ItemGroup>

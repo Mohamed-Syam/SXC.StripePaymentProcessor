@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Web.Mvc;
 using System.Web.SessionState;
+using System.Web.UI;
 using Newtonsoft.Json;
 using Sitecore.Commerce.XA.Feature.Cart.Models.InputModels;
 using Sitecore.Commerce.XA.Feature.Cart.Repositories;
@@ -346,6 +347,27 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                     ExpiryDate = ""
                 })
             });
+        }
+
+        #endregion
+
+        #region Review
+
+        [AllowAnonymous]
+        [StorefrontSessionState(SessionStateBehavior.ReadOnly)]
+        public ActionResult XcReview()
+        {
+            return (ActionResult)this.View(this.GetRenderingView(nameof(Review)), (object)this.ReviewRepository.GetReviewRenderingModel(this.Rendering));
+        }
+
+        [ValidateHttpPostHandler]
+        [ValidateJsonAntiForgeryToken]
+        [AllowAnonymous]
+        [HttpPost]
+        [OutputCache(Location = OutputCacheLocation.None, NoStore = true)]
+        public JsonResult XcReviewData()
+        {
+            return this.Json((object)this.ReviewRepository.GetReviewData(this.VisitorContext), JsonRequestBehavior.AllowGet);
         }
 
         #endregion
