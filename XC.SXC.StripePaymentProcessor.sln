@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XC.SXC.StripePaymentProcessor", "XC.SXC.StripePaymentProcessor\XC.SXC.StripePaymentProcessor.csproj", "{94E3C8C7-3B46-427A-AF84-FE61C9A37A48}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XC.SXC.Engine.Connect", "XC.SXC.Engine.Connect\XC.SXC.Engine.Connect\XC.SXC.Engine.Connect.csproj", "{75B0772D-5541-42FF-8EE3-27A70B82003A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{94E3C8C7-3B46-427A-AF84-FE61C9A37A48}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94E3C8C7-3B46-427A-AF84-FE61C9A37A48}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94E3C8C7-3B46-427A-AF84-FE61C9A37A48}.Release|Any CPU.Build.0 = Release|Any CPU
+		{75B0772D-5541-42FF-8EE3-27A70B82003A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{75B0772D-5541-42FF-8EE3-27A70B82003A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{75B0772D-5541-42FF-8EE3-27A70B82003A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{75B0772D-5541-42FF-8EE3-27A70B82003A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
