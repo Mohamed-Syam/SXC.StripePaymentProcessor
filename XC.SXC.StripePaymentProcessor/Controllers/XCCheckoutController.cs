@@ -17,6 +17,7 @@ using Sitecore.Diagnostics;
 using Sitecore.XA.Foundation.Mvc;
 using Stripe;
 using XC.SXC.StripePaymentProcessor.Models;
+using XC.SXC.StripePaymentProcessor.Repositories.Cart;
 using XC.SXC.StripePaymentProcessor.Repositories.Checkout;
 
 namespace XC.SXC.StripePaymentProcessor.Controllers
@@ -33,6 +34,7 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
         public IOrderConfirmationRepository OrderConfirmationRepository { get; protected set; }
         public IVisitorContext VisitorContext { get; protected set; }
         public IXcCheckoutRepository XcCheckoutRepository { get; protected set; }
+        public IXcCartRepository XcCartRepository { get; protected set; }
         public string StripeApiKey { get; set; }
         public CustomerService StripeCustomerService { get; set; }
         public ChargeService StripeAuthorizeChargeService { get; set; }
@@ -53,6 +55,7 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
             IOrderConfirmationRepository orderConfirmationRepository,
             IVisitorContext visitorContext,
             IXcCheckoutRepository xcCheckoutRepository,
+            IXcCartRepository xcCartRepository,
             IContext sitecoreContext) : base(storefrontContext, sitecoreContext)
         {
             Assert.ArgumentNotNull((object)startCheckoutRepository, nameof(startCheckoutRepository));
@@ -70,6 +73,7 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
             OrderConfirmationRepository = orderConfirmationRepository;
             VisitorContext = visitorContext;
             XcCheckoutRepository = xcCheckoutRepository;
+            XcCartRepository = xcCartRepository;
             StripeApiKey = Settings.GetSetting("stripeApiKey", "sk_test_nOpeQ7HuJ2uOkYVoto3TW5R800npGIrfCK");
             StripeCustomerService = new CustomerService();
             StripeAuthorizeChargeService = new ChargeService();
@@ -91,123 +95,47 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
         [HttpPost]
         public ActionResult SetAchPaymentMethod()
         {
-            var stripeCustomerId = string.Empty;
-            var bankAccount = new BankAccount();
-            var achCustomer = new Customer();
-            StripeConfiguration.SetApiKey(StripeApiKey);
+            var defaultCart = XcCartRepository.GetCurrentCart(VisitorContext, StorefrontContext);
 
-            #region Create Token - This is needed only if the user is adding a new bank account
-
-            var tokenCreateOptions = new TokenCreateOptions
+            if (defaultCart != null && defaultCart.ServiceProviderResult.Success)
             {
-                BankAccount = new BankAccountOptions
+                var paymentInputModel = new PaymentInputModel
                 {
-                    AccountHolderName = "John Doe",
-                    AccountHolderType = "Individual",
-                    AccountNumber = "000123456789",
-                    Country = "US",
-                    Currency = "USD",
-                    RoutingNumber = "110000000"
-                },
-            };
-
-            var createTokenResult = StripeTokenService.Create(tokenCreateOptions);
-
-            #endregion
-
-            #region Create Customer - This is needed when we need to create a ACH customer on Stripe
-
-            if (createTokenResult != null && createTokenResult.BankAccount != null)
-            {
-                var customerCreateOptions = new CustomerCreateOptions
-                {
-                    SourceToken = createTokenResult.Id,
-                    Description = "ACH Customer",
-                    Email = $"srikanth.kondapally@xcentium.com",
-                    Address = new AddressOptions
+                    BillingItemPath = $"/sitecore/content/Sitecore/Storefront/Home/checkout/billing",
+                    UserEmail = Sitecore.Context.User.IsAuthenticated ? Sitecore.Context.User.Profile?.Email : string.Empty,
+                    FederatedPayment = new FederatedPaymentInputModel
                     {
-                        Line1 = "123 Main Street",
-                        Line2 = "Suite 303",
+                        Amount = 220.00M,
+                        CardPaymentAcceptCardPrefix = "",
+                        CardToken = $"ACH|{Guid.NewGuid().ToString()}",
+                        PaymentMethodID = "0CFFAB11-2674-4A18-AB04-228B1F8A1DEC",
+                    },
+                    BillingAddress = new PartyInputModel
+                    {
+                        Address1 = "123 Main Street",
+                        PartyId = "Billing",
+                        ExternalId = "Billing",
+                        Name = "Srikanth Kondapally",
                         City = "Atlanta",
-                        State = "GA",
                         Country = "US",
-                        PostalCode = "30346"
+                        State = "GA",
+                        ZipPostalCode = "30346"
                     }
                 };
 
-                achCustomer = StripeCustomerService.Create(customerCreateOptions);
-            }
+                var setAchPaymentMethodsResult = XcCheckoutRepository.SetPaymentMethods(VisitorContext, paymentInputModel);
 
-            #endregion
-
-            #region Bank Account Verification - This is needed to verify user's bank account information. If it is not verified, it cannot be used for payments
-
-            if (achCustomer != null)
-            {
-                var bankAccountId = achCustomer.Sources?.Data?.FirstOrDefault(x => x.Object == "bank_account") != null
-                    ? achCustomer.Sources.Data.FirstOrDefault(x => x.Object == "bank_account")?.Id ?? string.Empty
-                    : string.Empty;
-
-                if (!string.IsNullOrEmpty(bankAccountId))
+                if (setAchPaymentMethodsResult.Success)
                 {
-                    var bankAccountVerifyOptions = new BankAccountVerifyOptions
+                    var stripePaymentResponseModel = new StripePaymentResponseModel
                     {
-                        Amounts = new List<long>
-                        {
-                            32, 45 //32 and 45 are the test values which will always return a success. If any other combination is passed, it will fail - applicable only for TEST mode
-                        }
+                         Email = defaultCart.Result.Email,
+                         Object = "ACH"
                     };
 
-                    bankAccount = StripeBankAccountService.Verify(achCustomer.Id, bankAccountId, bankAccountVerifyOptions);
-                }
-            }
+                    var storePaymentDetailsResult = XcCheckoutRepository.StorePaymentDetails(stripePaymentResponseModel, defaultCart.Result.ExternalId, true);
 
-            #endregion
-
-            #region Apply payment using ACH
-
-            if (bankAccount.Status == "verified")
-            {
-                var chargeCreateOptions = new ChargeCreateOptions
-                {
-                    Amount = 999,
-                    Currency = "USD",
-                    StatementDescriptor = "XC-Stripe-POC-ACH",
-                    ReceiptEmail = "srikanth.kondapally@xcentium.com",
-                    CustomerId = achCustomer?.Id
-                };
-
-                var authorizationChargeResult = StripeAuthorizeChargeService.Create(chargeCreateOptions);
-
-                if (authorizationChargeResult != null && authorizationChargeResult.Status == "pending")
-                {
-                    var paymentInputModel = new PaymentInputModel
-                    {
-                        BillingItemPath = $"/sitecore/content/Sitecore/Storefront/Home/checkout/billing",
-                        UserEmail = "srikanth.kondapally@xcentium.com",
-                        FederatedPayment = new FederatedPaymentInputModel
-                        {
-                            Amount = 220.00M,
-                            CardPaymentAcceptCardPrefix = bankAccount?.BankName,
-                            CardToken = $"{bankAccount?.AccountId}|{achCustomer?.Id}",
-                            PaymentMethodID = "0CFFAB11-2674-4A18-AB04-228B1F8A1DEC",
-                        },
-                        BillingAddress = new PartyInputModel
-                        {
-                            Address1 = achCustomer?.Address.Line1,
-                            PartyId = "0",
-                            ExternalId = "Billing",
-                            Name = bankAccount.AccountHolderName,
-                            City = achCustomer?.Address?.City,
-                            Country = achCustomer?.Address?.Country,
-                            State = achCustomer?.Address?.State,
-                            ZipPostalCode = achCustomer?.Address?.PostalCode
-                        }
-                    };
-
-                    var setAchPaymentMethodsResult = XcCheckoutRepository.SetPaymentMethods(VisitorContext, paymentInputModel);
-
-                    if (setAchPaymentMethodsResult.Success)
+                    if (storePaymentDetailsResult)
                     {
                         return Json(new
                         {
@@ -221,16 +149,13 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                             })
                         });
                     }
-
                 }
             }
-
-            #endregion
 
             return Json(new
             {
                 Success = false,
-                ErrorMessage = "There was an issue setting ACH Payment with Stripe",
+                ErrorMessage = "There was an issue validating ACH payment with Stripe",
                 CardDetails = Json(new
                 {
                     CardType = "",
@@ -243,45 +168,11 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
         [HttpPost]
         public ActionResult XcBilling(StripePaymentResponseModel stripePaymentResponseModel)
         {
-            var stripeCustomerId = string.Empty;
-
             if (stripePaymentResponseModel != null && !string.IsNullOrEmpty(stripePaymentResponseModel.Id))
             {
-                StripeConfiguration.SetApiKey(StripeApiKey);
+                var defaultCart = XcCartRepository.GetCurrentCart(VisitorContext, StorefrontContext);
 
-                #region Create Stripe Customer
-
-                //Create Stripe Customer
-                var customerCreateOptions = new CustomerCreateOptions
-                {
-                    Email = stripePaymentResponseModel.Email,
-                    SourceToken = stripePaymentResponseModel.Id
-                };
-
-                var stripeCustomer = StripeCustomerService.Create(customerCreateOptions);
-
-                if (stripeCustomer != null)
-                {
-                    stripeCustomerId = stripeCustomer.Id;
-                }
-
-                #endregion
-
-                #region Authorize Transacation
-
-                var authorizeChargeCreateOptions = new ChargeCreateOptions
-                {
-                    Amount = 999,
-                    Currency = "USD",
-                    StatementDescriptor = "XC-Stripe-POC-CC",
-                    ReceiptEmail = stripePaymentResponseModel.Email,
-                    Capture = false,
-                    CustomerId = stripeCustomer?.Id
-                };
-
-                var authorizeCharge = StripeAuthorizeChargeService.Create(authorizeChargeCreateOptions);
-
-                if (authorizeCharge != null && authorizeCharge.Status == Constants.StripeResponseMessages.Success)
+                if (defaultCart?.ServiceProviderResult != null && defaultCart.ServiceProviderResult.Success)
                 {
                     var paymentInputModel = new PaymentInputModel
                     {
@@ -289,9 +180,9 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                         UserEmail = stripePaymentResponseModel.Email,
                         FederatedPayment = new FederatedPaymentInputModel
                         {
-                            Amount = 220.00M,
+                            Amount = defaultCart.Result.Total.Amount,
                             CardPaymentAcceptCardPrefix = stripePaymentResponseModel.Card.Brand,
-                            CardToken = $"{stripePaymentResponseModel.Id}|{stripeCustomer?.Id}",
+                            CardToken = $"CC|{stripePaymentResponseModel.Id}",
                             PaymentMethodID = "0CFFAB11-2674-4A18-AB04-228B1F8A1DEC",
                         },
                         BillingAddress = new PartyInputModel
@@ -304,14 +195,6 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                             Country = stripePaymentResponseModel.Card.Country,
                             State = stripePaymentResponseModel.Card.AddressState,
                             ZipPostalCode = stripePaymentResponseModel.Card.AddressZip
-                        },
-                        CreditCardPayment = new CreditCardPaymentInputModel
-                        {
-                            CreditCardNumber = stripePaymentResponseModel.Card.Last4.ToString(),
-                            CustomerNameOnPayment = stripePaymentResponseModel.Card.Name,
-                            ExpirationMonth = Convert.ToInt32(stripePaymentResponseModel.Card.ExpMonth),
-                            ExpirationYear = Convert.ToInt32(stripePaymentResponseModel.Card.ExpYear),
-                            PaymentMethodID = "0CFFAB11-2674-4A18-AB04-228B1F8A1DEC",
                         }
                     };
 
@@ -319,27 +202,30 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
 
                     if (setPaymentMethodsResult.Success)
                     {
-                        return Json(new
+                        var storePaymentDetailsResult = XcCheckoutRepository.StorePaymentDetails(stripePaymentResponseModel, defaultCart.Result.ExternalId);
+
+                        if (storePaymentDetailsResult)
                         {
-                            Success = true,
-                            ErrorMessage = "",
-                            CardDetails = Json(new
+                            return Json(new
                             {
-                                CardType = stripePaymentResponseModel.Card.Brand,
-                                LastFourDigits = stripePaymentResponseModel.Card.Last4,
-                                ExpiryDate = $"{stripePaymentResponseModel.Card.ExpMonth}/{stripePaymentResponseModel.Card.ExpYear}"
-                            })
-                        });
+                                Success = true,
+                                ErrorMessage = "",
+                                CardDetails = Json(new
+                                {
+                                    CardType = stripePaymentResponseModel.Card.Brand,
+                                    LastFourDigits = stripePaymentResponseModel.Card.Last4,
+                                    ExpiryDate = $"{stripePaymentResponseModel.Card.ExpMonth}/{stripePaymentResponseModel.Card.ExpYear}"
+                                })
+                            });
+                        }
                     }
                 }
-
-                #endregion
             }
 
             return Json(new
             {
                 Success = false,
-                ErrorMessage = "There was an issue setting credit card payment with Stripe",
+                ErrorMessage = "There was an issue validating credit card payment with Stripe",
                 CardDetails = Json(new
                 {
                     CardType = "",

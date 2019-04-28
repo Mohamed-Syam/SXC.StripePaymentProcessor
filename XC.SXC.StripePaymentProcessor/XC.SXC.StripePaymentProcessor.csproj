@@ -56,8 +56,12 @@
     <Reference Include="Sitecore.Commerce.Connect.Remote, Version=11.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Sitecore.Commerce.Connect.Core.11.4.15\lib\net462\Sitecore.Commerce.Connect.Remote.dll</HintPath>
     </Reference>
-    <Reference Include="Sitecore.Commerce.Engine.Connect">
-      <HintPath>Lib\Sitecore.Commerce.Engine.Connect.dll</HintPath>
+    <Reference Include="Sitecore.Commerce.Engine.Connect, Version=2.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\Sitecore.Commerce.Engine.Connect.dll</HintPath>
+    </Reference>
+    <Reference Include="Sitecore.Commerce.ServiceProxy">
+      <HintPath>..\Lib\Sitecore.Commerce.ServiceProxy.dll</HintPath>
     </Reference>
     <Reference Include="Sitecore.Commerce.XA.Feature.Cart, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Sitecore.Commerce.XA.Feature.Cart.1.4.150\lib\net462\Sitecore.Commerce.XA.Feature.Cart.dll</HintPath>
@@ -155,6 +159,8 @@
     <Compile Include="Models\StripePaymentResponseModel.cs" />
     <Compile Include="Pipelines\Initialize\RegisterControllerRoutes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Repositories\Cart\IXcCartRepository.cs" />
+    <Compile Include="Repositories\Cart\XcCartRepository.cs" />
     <Compile Include="Repositories\Checkout\IXcCheckoutRepository.cs" />
     <Compile Include="Repositories\Checkout\XcCheckoutRepository.cs" />
   </ItemGroup>
@@ -167,7 +173,12 @@
       <DependentUpon>Web.config</DependentUpon>
     </None>
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\XC.SXC.Engine.Connect\XC.SXC.Engine.Connect\XC.SXC.Engine.Connect.csproj">
+      <Project>{75b0772d-5541-42ff-8ee3-27a70b82003a}</Project>
+      <Name>XC.SXC.Engine.Connect</Name>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
