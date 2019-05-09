@@ -53,7 +53,7 @@
         var GiftCards = Html.Sitecore().Field("Gift Cards Header", currentItem);
         var PaymentMethods = Html.Sitecore().Field("Payment Methods Header", currentItem);
         var EditPaymentMethods = Html.Sitecore().Field("Edit Payment Methods Text", currentItem);
-        var creditCardLabel = Html.Sitecore().Field("Credit Card Label", currentItem);
+        var creditCardLabel = Sitecore.Context.User.IsAuthenticated ? "ACH Payment" : "Credit card";
         var achPaymentLabel = "ACH Payment";
 
         var orderInformationLabel = Html.Sitecore().Field("Order Information Header", currentItem);
@@ -212,9 +212,9 @@
                 </div>
                 <div class="confirm-payment-methods">
                     <div class="payment-methods">
-                        <h4>PaymentMethodssdsd</h4>
+                        <h4>@PaymentMethods</h4>
                         <!-- ko if: $root.creditCardPayment().isAdded -->
-                        <h5>@(Sitecore.Context.User.IsAuthenticated ? "ACH Payment" : creditCardLabel)</h5>
+                        <h5>@creditCardLabel</h5>
                         <ul class="payment-method-lines" data-bind="with: creditCardPayment">
                             <li class="confirm-creditCardNameOnCard" data-bind="text: customerNameOnPayment"></li>
                             <li class="confirm-creditCardType" data-bind="text: description"></li>

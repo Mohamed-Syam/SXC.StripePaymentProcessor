@@ -11,6 +11,7 @@ using Sitecore.Commerce.XA.Feature.Cart.Repositories;
 using Sitecore.Commerce.XA.Foundation.Common.Attributes;
 using Sitecore.Commerce.XA.Foundation.Common.Context;
 using Sitecore.Commerce.XA.Foundation.Common.Controllers;
+using Sitecore.Commerce.XA.Foundation.Common.Models.JsonResults;
 using Sitecore.Commerce.XA.Foundation.Connect;
 using Sitecore.Configuration;
 using Sitecore.Diagnostics;
@@ -105,7 +106,7 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                     UserEmail = Sitecore.Context.User.IsAuthenticated ? Sitecore.Context.User.Profile?.Email : string.Empty,
                     FederatedPayment = new FederatedPaymentInputModel
                     {
-                        Amount = 220.00M,
+                        Amount = defaultCart.Result.Total.Amount,
                         CardPaymentAcceptCardPrefix = "",
                         CardToken = $"ACH|{Guid.NewGuid().ToString()}",
                         PaymentMethodID = "0CFFAB11-2674-4A18-AB04-228B1F8A1DEC",
@@ -120,6 +121,14 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                         Country = "US",
                         State = "GA",
                         ZipPostalCode = "30346"
+                    },
+                    CreditCardPayment = new CreditCardPaymentInputModel
+                    {
+                        PaymentMethodID = "0CFFAB11-2674-4A18-AB04-228B1F8A1DEC",
+                        ValidationCode = $"ACH|{Guid.NewGuid().ToString()}",
+                        PartyID = "Billing",
+                        Amount = defaultCart.Result.Total.Amount,
+                        CustomerNameOnPayment = "Srikanth Kondapally"
                     }
                 };
 
@@ -177,7 +186,7 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                     var paymentInputModel = new PaymentInputModel
                     {
                         BillingItemPath = $"/sitecore/content/Sitecore/Storefront/Home/checkout/billing",
-                        UserEmail = stripePaymentResponseModel.Email,
+                        UserEmail = Sitecore.Context.User.IsAuthenticated ? Sitecore.Context.User.Profile?.Email : stripePaymentResponseModel.Email ?? "srikanth.kondapally@xcentium.com",
                         FederatedPayment = new FederatedPaymentInputModel
                         {
                             Amount = defaultCart.Result.Total.Amount,
@@ -195,6 +204,14 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                             Country = stripePaymentResponseModel.Card.Country,
                             State = stripePaymentResponseModel.Card.AddressState,
                             ZipPostalCode = stripePaymentResponseModel.Card.AddressZip
+                        },
+                        CreditCardPayment = new CreditCardPaymentInputModel
+                        {
+                            PaymentMethodID = "0CFFAB11-2674-4A18-AB04-228B1F8A1DEC",
+                            ValidationCode = $"CC|{stripePaymentResponseModel.Id}",
+                            PartyID = "Billing",
+                            Amount = defaultCart.Result.Total.Amount,
+                            CustomerNameOnPayment = stripePaymentResponseModel.Card.Name
                         }
                     };
 
@@ -233,6 +250,28 @@ namespace XC.SXC.StripePaymentProcessor.Controllers
                     ExpiryDate = ""
                 })
             });
+        }
+
+        #endregion
+
+        #region Set Payment Methods Override
+
+        [ValidateHttpPostHandler]
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateJsonAntiForgeryToken]
+        [OutputCache(Location = OutputCacheLocation.None, NoStore = true)]
+        public JsonResult SetPaymentMethods(PaymentInputModel inputModel)
+        {
+            BaseJsonResult result = new BaseJsonResult(this.SitecoreContext, this.StorefrontContext);
+            //this.ValidateModel(result);
+
+            //if (result.HasErrors)
+            //{
+            //    return this.Json((object)result);
+            //}
+
+            return this.Json((object)this.XcCheckoutRepository.SendUserToReviewPage(this.VisitorContext, inputModel));
         }
 
         #endregion

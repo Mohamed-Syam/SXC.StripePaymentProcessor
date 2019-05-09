@@ -347,7 +347,9 @@
                 </div>
                 <!-- ACH payments Start-->
 
-                <a href="#" class="apply-ach-payment-toggle achpayment" style="margin-bottom: 5px; display: block; font-weight: 600;" data-bind="click: $root.isEmailFilled">
+                if(Sitecore.Context.User.IsAuthenticated)
+                {
+                    <a href="#" class="apply-ach-payment-toggle achpayment" style="margin-bottom: 5px; display: block; font-weight: 600;" data-bind="click: $root.isEmailFilled">
                     <span class="credit-card-toggle-icon"></span>Apply ACH Payment
                 </a>
                 <div class="ach-payment-section stripepaymentform" style="display: none;">
@@ -364,6 +366,7 @@
 
                     </form>
                 </div>
+                }
                 <!-- ACH payments End-->
                 <a href="#" class="apply-gift-card-toggle giftCardPayment" style="margin-bottom: 5px; display: block; font-weight: 600" data-bind="click: $root.isEmailFilled">
                     <span><span class="apply-gift-card-toggle-icon"></span></span>@applyGiftLabel

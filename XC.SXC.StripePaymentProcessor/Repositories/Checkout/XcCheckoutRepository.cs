@@ -107,6 +107,15 @@ namespace XC.SXC.StripePaymentProcessor.Repositories.Checkout
             return model;
         }
 
+        public SetPaymentMethodsJsonResult SendUserToReviewPage(IVisitorContext visitorContext, PaymentInputModel inputModel)
+        {
+            var model = ModelProvider.GetModel<SetPaymentMethodsJsonResult>();
+
+            model.Initialize(inputModel.BillingItemPath);
+
+            return model;
+        }
+
         public bool StorePaymentDetails(StripePaymentResponseModel stripePaymentResponseModel, string cartId, bool userSelectedAchPayment = false)
         {
             var storePaymentDetailsArgument = new StorePaymentDetailsArgument();
@@ -116,7 +125,7 @@ namespace XC.SXC.StripePaymentProcessor.Repositories.Checkout
                 storePaymentDetailsArgument = new StorePaymentDetailsArgument
                 {
                     CartId = cartId,
-                    Email = stripePaymentResponseModel.Email,
+                    Email = stripePaymentResponseModel.Email ?? "srikanth.kondapally@xcentium.com",
                     CreateStripeCustomer = false,
                     IsAchAccountBeingUsed = true
                 };
@@ -125,7 +134,7 @@ namespace XC.SXC.StripePaymentProcessor.Repositories.Checkout
             {
                 storePaymentDetailsArgument = new StorePaymentDetailsArgument
                 {
-                    Email = stripePaymentResponseModel.Email,
+                    Email = stripePaymentResponseModel.Email ?? "srikanth.kondapally@xcentium.com",
                     CreateStripeCustomer = true,
                     CardDetails = new Card()
                     {

@@ -147,10 +147,12 @@
     <Content Include="App_Config\Include\XC.StripeSettings.config">
       <SubType>Designer</SubType>
     </Content>
+    <None Include="Properties\PublishProfiles\sc902-TestPublish.pubxml" />
     <None Include="Properties\PublishProfiles\SXP 902 Local - SK.pubxml" />
     <Content Include="Views\Commerce\XCCheckout\XcBilling.cshtml" />
     <Content Include="Views\Commerce\Checkout\Review.cshtml" />
     <Content Include="Views\Commerce\XCCheckout\XcReview.cshtml" />
+    <Content Include="Views\Commerce\XCCheckout\Review.cshtml" />
     <None Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
