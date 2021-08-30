@@ -4,4 +4,4 @@ Integrating Stripe as the payment processor for Sitecore Experience Commerce pla
 
 ## This repo contains the stroe-front integration with stripe elements.
 
-## Next, add stripe pluging to commerce engine
+## Next, add stripe plug to commerce engine
